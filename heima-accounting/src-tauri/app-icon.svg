@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <!-- 背景圆角矩形 -->
+  <rect width="1024" height="1024" rx="200" ry="200" fill="url(#bg)"/>
+  <!-- ¥ 符号 -->
+  <g transform="translate(512,460)">
+    <text font-family="Arial, sans-serif" font-size="520" font-weight="bold" fill="#e8b84b" text-anchor="middle" dominant-baseline="central">¥</text>
+  </g>
+  <!-- 底部 "黑马" 小字 -->
+  <text x="512" y="820" font-family="Arial, sans-serif" font-size="96" font-weight="bold" fill="#e8b84b" text-anchor="middle" dominant-baseline="central">黑马记账</text>
+</svg>

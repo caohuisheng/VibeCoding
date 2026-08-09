@@ -1,0 +1,55 @@
+.bill-item {
+  padding: 12px 16px !important;
+  background: #fff;
+  border-radius: 12px !important;
+  margin-bottom: 8px;
+}
+
+.bill-category-icon {
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #f5f5f5;
+  border-radius: 12px;
+}
+
+.bill-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bill-category-name {
+  font-size: 14px;
+  color: #333;
+}
+
+.bill-amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.bill-desc-row {
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.bill-action-icon {
+  font-size: 16px;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.bill-action-icon:hover {
+  color: #1677ff;
+}
+
+.bill-delete-icon:hover {
+  color: #ff4d4f;
+}
