@@ -28,6 +28,10 @@
   margin-right: 4px;
 }
 
+.currency-symbol.income {
+  color: #52c41a;
+}
+
 .amount-input {
   font-size: 40px;
   font-weight: 700;

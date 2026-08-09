@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { DatePicker, Select } from 'antd';
-
+import { DatePicker, Select, Segmented } from 'antd';
 import dayjs from 'dayjs';
+import type { BillType } from '../types';
 import { useBillStore } from '../store/useBillStore';
 import BillListView from '../components/BillList';
 import { deleteBill } from '../db';
@@ -13,13 +13,15 @@ export default function Bills() {
     useBillStore();
   const [filterMonth, setFilterMonth] = useState<string | undefined>();
   const [filterCategory, setFilterCategory] = useState<number | undefined>();
+  const [filterType, setFilterType] = useState<BillType | undefined>();
 
   const reload = useCallback(() => {
     loadBills({
       month: filterMonth,
       category_id: filterCategory,
+      bill_type: filterType,
     });
-  }, [loadBills, filterMonth, filterCategory]);
+  }, [loadBills, filterMonth, filterCategory, filterType]);
 
   useEffect(() => {
     loadCategories();
@@ -44,27 +46,39 @@ export default function Bills() {
       </h2>
 
       {/* 筛选栏 */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <MonthPicker
-          placeholder="选择月份"
-          value={filterMonth ? dayjs(filterMonth) : null}
-          onChange={(d) =>
-            setFilterMonth(d ? d.format('YYYY-MM') : undefined)
-          }
-          allowClear
-          style={{ flex: 1 }}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        <Segmented
+          block
+          value={filterType || ''}
+          onChange={(val) => setFilterType(val === '' ? undefined : val as BillType)}
+          options={[
+            { label: '全部', value: '' },
+            { label: '💸 支出', value: 'expense' },
+            { label: '💰 收入', value: 'income' },
+          ]}
         />
-        <Select
-          placeholder="选择分类"
-          value={filterCategory}
-          onChange={setFilterCategory}
-          allowClear
-          style={{ flex: 1 }}
-          options={parentCategories.map((c) => ({
-            label: `${c.icon} ${c.name}`,
-            value: c.id,
-          }))}
-        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <MonthPicker
+            placeholder="选择月份"
+            value={filterMonth ? dayjs(filterMonth) : null}
+            onChange={(d) =>
+              setFilterMonth(d ? d.format('YYYY-MM') : undefined)
+            }
+            allowClear
+            style={{ flex: 1 }}
+          />
+          <Select
+            placeholder="选择分类"
+            value={filterCategory}
+            onChange={setFilterCategory}
+            allowClear
+            style={{ flex: 1 }}
+            options={parentCategories.map((c) => ({
+              label: `${c.icon} ${c.name}`,
+              value: c.id,
+            }))}
+          />
+        </div>
       </div>
 
       {/* 账单列表 */}

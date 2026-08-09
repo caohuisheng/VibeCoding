@@ -1,3 +1,6 @@
+// ===== 收支类型 =====
+export type BillType = 'expense' | 'income';
+
 // ===== 分类类型 =====
 export interface Category {
   id: number;
@@ -5,6 +8,7 @@ export interface Category {
   parent_id: number | null; // 一级分类为 null，二级分类指向父分类ID
   icon: string; // emoji 图标
   sort_order: number;
+  bill_type: BillType; // 所属收支类型
 }
 
 // 带子分类的一级分类（用于分类选择器）
@@ -19,6 +23,7 @@ export interface Bill {
   category_id: number; // 关联二级分类ID
   date: string; // 日期 YYYY-MM-DD
   note: string; // 备注
+  bill_type: BillType; // 收支类型
   created_at: string;
 }
 
@@ -34,7 +39,7 @@ export interface BillWithCategory extends Bill {
 // ===== 统计类型 =====
 export interface MonthlyStats {
   month: string; // YYYY-MM
-  total: number; // 当月总支出
+  total: number; // 当月总金额
   count: number; // 当月账单数
 }
 
@@ -43,14 +48,22 @@ export interface CategoryStats {
   category_name: string;
   category_icon: string;
   parent_category_name: string;
-  total: number; // 该分类总支出
+  total: number; // 该分类总金额
   percentage: number; // 占比
+}
+
+export interface MonthlySummary {
+  month_expense: number;
+  month_income: number;
+  today_expense: number;
+  today_income: number;
 }
 
 // ===== 账单表单类型 =====
 export interface BillFormData {
   amount: number;
   category_id: number;
+  bill_type: BillType;
   date: string;
   note: string;
 }
@@ -60,4 +73,5 @@ export interface BillFilter {
   month?: string; // YYYY-MM
   category_id?: number;
   keyword?: string;
+  bill_type?: BillType; // 收支类型筛选
 }

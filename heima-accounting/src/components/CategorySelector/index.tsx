@@ -1,23 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Modal } from 'antd';
-import type { Category } from '../../types';
+import type { Category, BillType } from '../../types';
 import { useBillStore } from '../../store/useBillStore';
 import './index.css';
 
 interface Props {
   visible: boolean;
+  billType: BillType;
   onSelect: (category: Category) => void;
   onClose: () => void;
 }
 
-export default function CategorySelector({ visible, onSelect, onClose }: Props) {
+export default function CategorySelector({ visible, billType, onSelect, onClose }: Props) {
   const { categories } = useBillStore();
   const [selectedParent, setSelectedParent] = useState<Category | null>(null);
 
-  // 一级分类
-  const parentCategories = categories.filter((c) => c.parent_id === null);
-  // 当前选中的二级分类
-  const childCategories = categories.filter(
+  // 按收支类型筛选
+  const typeCategories = categories.filter((c) => c.bill_type === billType);
+  const parentCategories = typeCategories.filter((c) => c.parent_id === null);
+  const childCategories = typeCategories.filter(
     (c) => c.parent_id === selectedParent?.id
   );
 
@@ -41,6 +42,8 @@ export default function CategorySelector({ visible, onSelect, onClose }: Props) 
     setSelectedParent(null);
   };
 
+  const typeLabel = billType === 'expense' ? '支出' : '收入';
+
   return (
     <Modal
       open={visible}
@@ -49,7 +52,7 @@ export default function CategorySelector({ visible, onSelect, onClose }: Props) 
       title={
         selectedParent
           ? `选择「${selectedParent.name}」小类`
-          : '选择支出一级分类'
+          : `选择${typeLabel}一级分类`
       }
       width={360}
     >

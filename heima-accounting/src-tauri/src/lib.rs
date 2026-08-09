@@ -29,6 +29,7 @@ pub fn run() {
             commands::get_monthly_stats,
             commands::get_category_stats,
             commands::export_csv,
+            commands::get_monthly_summary,
         ])
         .run(tauri::generate_context!())
         .expect("启动应用失败");

@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import type { BillFilter, BillWithCategory, Category } from '../types';
-import { getCategories, getBills, getMonthlyStats, getCategoryStats } from '../db';
+import type { BillFilter, BillWithCategory, Category, BillType, MonthlySummary } from '../types';
+import { getCategories, getBills, getMonthlyStats, getCategoryStats, getMonthlySummary } from '../db';
 import type { MonthlyStats, CategoryStats } from '../types';
+import { getCurrentMonth, getToday } from '../utils/format';
 
 interface BillStore {
   // 分类数据
   categories: Category[];
-  loadCategories: () => Promise<void>;
+  loadCategories: (billType?: BillType) => Promise<void>;
 
   // 账单数据
   bills: BillWithCategory[];
@@ -16,8 +17,12 @@ interface BillStore {
   // 统计数据
   monthlyStats: MonthlyStats[];
   categoryStats: CategoryStats[];
-  loadMonthlyStats: () => Promise<void>;
-  loadCategoryStats: (month: string) => Promise<void>;
+  loadMonthlyStats: (billType?: BillType) => Promise<void>;
+  loadCategoryStats: (month: string, billType?: BillType) => Promise<void>;
+
+  // 月度汇总
+  monthlySummary: MonthlySummary | null;
+  loadMonthlySummary: () => Promise<void>;
 
   // 刷新标记
   refreshFlag: number;
@@ -26,8 +31,8 @@ interface BillStore {
 
 export const useBillStore = create<BillStore>((set) => ({
   categories: [],
-  loadCategories: async () => {
-    const cats = await getCategories();
+  loadCategories: async (billType?: BillType) => {
+    const cats = await getCategories(billType);
     set({ categories: cats });
   },
 
@@ -41,13 +46,19 @@ export const useBillStore = create<BillStore>((set) => ({
 
   monthlyStats: [],
   categoryStats: [],
-  loadMonthlyStats: async () => {
-    const stats = await getMonthlyStats();
+  loadMonthlyStats: async (billType?: BillType) => {
+    const stats = await getMonthlyStats(billType);
     set({ monthlyStats: stats });
   },
-  loadCategoryStats: async (month: string) => {
-    const stats = await getCategoryStats(month);
+  loadCategoryStats: async (month: string, billType?: BillType) => {
+    const stats = await getCategoryStats(month, billType);
     set({ categoryStats: stats });
+  },
+
+  monthlySummary: null,
+  loadMonthlySummary: async () => {
+    const summary = await getMonthlySummary(getCurrentMonth(), getToday());
+    set({ monthlySummary: summary });
   },
 
   refreshFlag: 0,

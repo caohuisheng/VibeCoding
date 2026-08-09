@@ -48,14 +48,15 @@ export function PieChart({ data }: PieChartProps) {
 
 interface BarChartProps {
   data: MonthlyStats[];
+  label?: string;
 }
 
-/** 柱状图：月度支出趋势 */
-export function BarChart({ data }: BarChartProps) {
+/** 柱状图：月度趋势 */
+export function BarChart({ data, label = '金额' }: BarChartProps) {
   const option = {
     tooltip: {
       trigger: 'axis' as const,
-      formatter: '{b}<br/>支出: ¥{c}',
+      formatter: `{b}<br/>${label}: ¥{c}`,
     },
     grid: {
       left: 16,

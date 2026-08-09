@@ -1,7 +1,7 @@
 import { List, Tag, Empty, Popconfirm, message } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type { BillWithCategory } from '../../types';
-import { formatAmount, formatDate } from '../../utils/format';
+import { formatAmountWithType, getAmountColor, formatDate } from '../../utils/format';
 import './index.css';
 
 interface Props {
@@ -71,16 +71,19 @@ export default function BillListView({ bills, loading, onEdit, onDelete }: Props
                 <span className="bill-category-name">
                   {bill.parent_category_name} - {bill.category_name}
                 </span>
-                <span className="bill-amount">
-                  {formatAmount(bill.amount)}
+                <span className="bill-amount" style={{ color: getAmountColor(bill.bill_type) }}>
+                  {formatAmountWithType(bill.amount, bill.bill_type)}
                 </span>
               </div>
             }
             description={
               <div className="bill-desc-row">
                 <span>{formatDate(bill.date)}</span>
+                <Tag color={bill.bill_type === 'income' ? 'green' : 'red'} style={{ marginLeft: 8, fontSize: 10 }}>
+                  {bill.bill_type === 'income' ? '收入' : '支出'}
+                </Tag>
                 {bill.note && (
-                  <Tag color="default" style={{ marginLeft: 8 }}>
+                  <Tag color="default" style={{ marginLeft: 4 }}>
                     {bill.note}
                   </Tag>
                 )}

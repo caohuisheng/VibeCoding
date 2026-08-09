@@ -1,40 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Statistic, Button, List, Tag } from 'antd';
 import { PlusOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useBillStore } from '../store/useBillStore';
-import { formatAmount, formatDate, getCurrentMonth, getToday } from '../utils/format';
+import { formatAmount, formatDate, formatAmountWithType, getAmountColor } from '../utils/format';
 import './Home.css';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { bills, loadBills, loadCategories, refreshFlag } = useBillStore();
-  const [monthTotal, setMonthTotal] = useState(0);
-  const [todayTotal, setTodayTotal] = useState(0);
-
-  const currentMonth = getCurrentMonth();
-  const today = getToday();
+  const { bills, monthlySummary, loadBills, loadCategories, loadMonthlySummary, refreshFlag } = useBillStore();
 
   useEffect(() => {
     loadCategories();
     loadBills();
-  }, [loadCategories, loadBills, refreshFlag]);
+    loadMonthlySummary();
+  }, [loadCategories, loadBills, loadMonthlySummary, refreshFlag]);
 
-  // 计算本月合计和今日合计
-  useEffect(() => {
-    let month = 0;
-    let todaySum = 0;
-    bills.forEach((b) => {
-      if (b.date.startsWith(currentMonth)) {
-        month += b.amount;
-      }
-      if (b.date === today) {
-        todaySum += b.amount;
-      }
-    });
-    setMonthTotal(month);
-    setTodayTotal(todaySum);
-  }, [bills, currentMonth, today]);
+  const summary = monthlySummary || { month_expense: 0, month_income: 0, today_expense: 0, today_income: 0 };
+  const monthBalance = summary.month_income - summary.month_expense;
 
   // 近期账单（最近7条）
   const recentBills = bills.slice(0, 7);
@@ -47,24 +30,55 @@ export default function Home() {
         <p className="app-subtitle">每一笔，都算数</p>
       </div>
 
-      {/* 统计卡片 */}
+      {/* 统计卡片 — 第一行：本月收入/支出/结余 */}
       <div className="stats-row">
         <Card className="stat-card" bordered={false}>
           <Statistic
-            title="本月支出"
-            value={monthTotal}
+            title="本月收入"
+            value={summary.month_income}
             precision={2}
             prefix="¥"
-            valueStyle={{ color: '#1677ff', fontWeight: 600 }}
+            valueStyle={{ color: '#52c41a', fontWeight: 600, fontSize: 20 }}
+          />
+        </Card>
+        <Card className="stat-card" bordered={false}>
+          <Statistic
+            title="本月支出"
+            value={summary.month_expense}
+            precision={2}
+            prefix="¥"
+            valueStyle={{ color: '#ff4d4f', fontWeight: 600, fontSize: 20 }}
+          />
+        </Card>
+        <Card className="stat-card" bordered={false}>
+          <Statistic
+            title="本月结余"
+            value={monthBalance}
+            precision={2}
+            prefix="¥"
+            valueStyle={{ color: monthBalance >= 0 ? '#1677ff' : '#ff4d4f', fontWeight: 600, fontSize: 20 }}
+          />
+        </Card>
+      </div>
+
+      {/* 统计卡片 — 第二行：今日收入/支出 */}
+      <div className="stats-row" style={{ marginTop: 8 }}>
+        <Card className="stat-card" bordered={false}>
+          <Statistic
+            title="今日收入"
+            value={summary.today_income}
+            precision={2}
+            prefix="¥"
+            valueStyle={{ color: '#52c41a', fontWeight: 600 }}
           />
         </Card>
         <Card className="stat-card" bordered={false}>
           <Statistic
             title="今日支出"
-            value={todayTotal}
+            value={summary.today_expense}
             precision={2}
             prefix="¥"
-            valueStyle={{ color: '#52c41a', fontWeight: 600 }}
+            valueStyle={{ color: '#ff4d4f', fontWeight: 600 }}
           />
         </Card>
       </div>
@@ -106,8 +120,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="bill-right">
-                  <span className="bill-amount-text">
-                    -{formatAmount(bill.amount)}
+                  <span className="bill-amount-text" style={{ color: getAmountColor(bill.bill_type) }}>
+                    {formatAmountWithType(bill.amount, bill.bill_type)}
                   </span>
                   {bill.note && (
                     <Tag color="default" className="bill-note-tag">
