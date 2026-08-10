@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicegram/nicegram-spec/refs/heads/main/tauri-conf.schema.json",
-  "productName": "heima-accounting",
+  "productName": "黑马记账",
   "version": "1.0.0",
   "identifier": "com.heima.accounting",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "heima-accounting",
+        "title": "黑马记账",
         "width": 420,
         "height": 780,
         "minWidth": 360,
