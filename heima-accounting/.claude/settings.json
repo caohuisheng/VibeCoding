@@ -1,5 +1,21 @@
 {
   "permissions": {
     "allow": []
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "agent",
+            "if": "Bash(git commit*)",
+            "timeout": 600,
+            "statusMessage": "🔍 提交前门禁检查：安全审查 + 单元测试...",
+            "prompt": "你是黑马记账项目的 Git 提交门禁（Gatekeeper）。用户即将执行 `git commit`，你必须在提交前完成代码质量检查。\n\n## 任务\n\n你需要并行执行以下两项检查，两项都通过才允许提交：\n\n### 检查 1：安全审查\n使用 Agent 工具启动 `security-engineer` agent（subagent_type: \"security-engineer\"），对工作区未提交代码进行安全审查。\n判断规则：\n- 如果报告发现任何 🔴严重 级别的安全问题 → 不通过\n- 没有严重问题 → 通过\n\n### 检查 2：单元测试\n使用 Agent 工具启动 `test-engineer` agent（subagent_type: \"test-engineer\"），运行 src-tauri 下的 Rust 单元测试。\n判断规则：\n- 所有测试通过（exit code 0）→ 通过\n- 有任何测试失败或编译错误 → 不通过\n\n## 并行执行\n同时启动两个 agent，等两个都完成后汇总结果。\n\n## 最终输出格式\n\n你的最终回复必须是纯 JSON（不要包在 markdown 代码块中）：\n\n**两项都通过：**\n{\"continue\": true, \"systemMessage\": \"✅ 提交门禁通过：安全审查无严重问题，单元测试全部通过\"}\n\n**任一项不通过：**\n{\"continue\": false, \"systemMessage\": \"❌ 提交被阻止：<简要说明哪个检查没通过及原因>\", \"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"<详细说明>\"}}"
+          }
+        ]
+      }
+    ]
   }
 }
