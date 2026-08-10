@@ -34,6 +34,18 @@ impl Database {
         Ok(db)
     }
 
+    /// 创建内存数据库（用于测试，不依赖文件系统和 Tauri AppHandle）
+    #[cfg(test)]
+    pub(crate) fn new_test() -> Self {
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        let db = Database { conn };
+        db.create_tables().expect("建表失败");
+        db.migrate().expect("迁移失败");
+        db.seed_categories().expect("种子数据插入失败");
+        db.seed_income_categories().expect("收入种子数据插入失败");
+        db
+    }
+
     /// 建表
     fn create_tables(&self) -> SqlResult<()> {
         self.conn.execute_batch(
@@ -211,5 +223,243 @@ impl Database {
         }
 
         Ok(())
+    }
+}
+
+// ===== 测试模块 =====
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    /// 创建测试用数据库（使用内存数据库，不依赖文件系统和 Tauri）
+    fn new_test_db() -> Database {
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        let db = Database { conn };
+        db.create_tables().expect("建表失败");
+        db.migrate().expect("迁移失败");
+        db.seed_categories().expect("种子数据插入失败");
+        db.seed_income_categories().expect("收入种子数据插入失败");
+        db
+    }
+
+    #[test]
+    fn test_create_tables() {
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        let db = Database { conn };
+        db.create_tables().expect("建表失败");
+
+        // 验证 categories 表存在
+        let count: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='categories'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("查询失败");
+        assert_eq!(count, 1, "categories 表应该存在");
+
+        // 验证 bills 表存在
+        let count: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='bills'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("查询失败");
+        assert_eq!(count, 1, "bills 表应该存在");
+    }
+
+    #[test]
+    fn test_migrate_adds_bill_type() {
+        // 模拟旧数据库：手动建表（不含 bill_type 列）
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        conn.execute_batch(
+            "CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT, parent_id INTEGER, icon TEXT, sort_order INTEGER);
+             CREATE TABLE bills (id INTEGER PRIMARY KEY, amount REAL, category_id INTEGER, date TEXT, note TEXT, created_at TEXT);",
+        )
+        .expect("手动建表失败");
+
+        let db = Database { conn };
+        db.migrate().expect("迁移失败");
+
+        // 验证 bills 表已添加 bill_type 列
+        let mut stmt = db.conn.prepare("PRAGMA table_info(bills)").unwrap();
+        let has_bill_type = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(1).unwrap()))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .any(|name| name == "bill_type");
+        assert!(has_bill_type, "迁移后 bills 表应有 bill_type 列");
+
+        // 验证 categories 表已添加 bill_type 列
+        let mut stmt = db.conn.prepare("PRAGMA table_info(categories)").unwrap();
+        let has_bill_type = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(1).unwrap()))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .any(|name| name == "bill_type");
+        assert!(has_bill_type, "迁移后 categories 表应有 bill_type 列");
+    }
+
+    #[test]
+    fn test_seed_categories_populates_data() {
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        let db = Database { conn };
+        db.create_tables().expect("建表失败");
+        db.seed_categories().expect("种子数据插入失败");
+
+        // 应有 10 个一级分类 + 50 个二级分类 = 60 条支出分类
+        let count: i64 = db
+            .conn
+            .query_row("SELECT COUNT(*) FROM categories", [], |row| row.get(0))
+            .expect("查询失败");
+        assert_eq!(count, 57, "应有 57 条支出分类数据（10个一级+47个二级）");
+
+        // 验证一级分类存在
+        let parent_count: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM categories WHERE parent_id IS NULL",
+                [],
+                |row| row.get(0),
+            )
+            .expect("查询失败");
+        assert_eq!(parent_count, 10, "应有 10 个一级分类");
+    }
+
+    #[test]
+    fn test_seed_categories_idempotent() {
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        let db = Database { conn };
+        db.create_tables().expect("建表失败");
+
+        // 第一次调用插入数据
+        db.seed_categories().expect("首次种子插入失败");
+        let count1: i64 = db
+            .conn
+            .query_row("SELECT COUNT(*) FROM categories", [], |row| row.get(0))
+            .unwrap();
+
+        // 第二次调用不应重复插入
+        db.seed_categories().expect("二次种子插入失败");
+        let count2: i64 = db
+            .conn
+            .query_row("SELECT COUNT(*) FROM categories", [], |row| row.get(0))
+            .unwrap();
+
+        assert_eq!(count1, count2, "种子数据不应重复插入");
+    }
+
+    #[test]
+    fn test_seed_income_categories() {
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        let db = Database { conn };
+        db.create_tables().expect("建表失败");
+        db.seed_income_categories().expect("收入种子插入失败");
+
+        // 应有 6 个一级收入分类 + 21 个二级收入分类 = 27 条
+        let income_count: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM categories WHERE bill_type = 'income'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("查询失败");
+        assert_eq!(income_count, 27, "应有 27 条收入分类数据");
+
+        // 验证一级收入分类
+        let parent_count: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM categories WHERE bill_type = 'income' AND parent_id IS NULL",
+                [],
+                |row| row.get(0),
+            )
+            .expect("查询失败");
+        assert_eq!(parent_count, 6, "应有 6 个一级收入分类");
+    }
+
+    #[test]
+    fn test_seed_income_categories_idempotent() {
+        let conn = Connection::open_in_memory().expect("无法创建内存数据库");
+        let db = Database { conn };
+        db.create_tables().expect("建表失败");
+
+        db.seed_income_categories().expect("首次收入种子插入失败");
+        let count1: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM categories WHERE bill_type = 'income'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+
+        db.seed_income_categories().expect("二次收入种子插入失败");
+        let count2: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM categories WHERE bill_type = 'income'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+
+        assert_eq!(count1, count2, "收入种子数据不应重复插入");
+    }
+
+    #[test]
+    fn test_full_init_flow() {
+        // 模拟完整的 Database::new() 流程（不含 Tauri 依赖部分）
+        let db = new_test_db();
+
+        // 验证总分类数：57 支出 + 27 收入 = 84
+        let total: i64 = db
+            .conn
+            .query_row("SELECT COUNT(*) FROM categories", [], |row| row.get(0))
+            .expect("查询失败");
+        assert_eq!(total, 84);
+
+        // 验证支出分类
+        let expense: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM categories WHERE bill_type = 'expense'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("查询失败");
+        assert_eq!(expense, 57);
+
+        // 验证收入分类
+        let income: i64 = db
+            .conn
+            .query_row(
+                "SELECT COUNT(*) FROM categories WHERE bill_type = 'income'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("查询失败");
+        assert_eq!(income, 27);
+
+        // 验证表结构：bills 表应有所有必要列
+        let mut stmt = db.conn.prepare("PRAGMA table_info(bills)").unwrap();
+        let columns: Vec<String> = stmt
+            .query_map([], |row| Ok(row.get::<_, String>(1).unwrap()))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect();
+        assert!(columns.contains(&"id".to_string()));
+        assert!(columns.contains(&"amount".to_string()));
+        assert!(columns.contains(&"category_id".to_string()));
+        assert!(columns.contains(&"date".to_string()));
+        assert!(columns.contains(&"note".to_string()));
+        assert!(columns.contains(&"bill_type".to_string()));
+        assert!(columns.contains(&"created_at".to_string()));
     }
 }
