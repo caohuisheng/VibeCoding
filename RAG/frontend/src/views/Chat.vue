@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Delete, Setting, DataAnalysis, SwitchButton } from '@element-plus/icons-vue'
@@ -52,7 +52,7 @@ async function send() {
   if (!q || streaming.value) return
   input.value = ''
   messages.value.push({ id: 0, role: 'user', content: q, citations: null, feedback: null, created_at: '' })
-  const aiMsg: Message = { id: 0, role: 'assistant', content: '', citations: [], feedback: null, created_at: '' }
+  const aiMsg = reactive<Message>({ id: 0, role: 'assistant', content: '', citations: [], feedback: null, created_at: '' })
   messages.value.push(aiMsg)
   streaming.value = true
   scrollToBottom()

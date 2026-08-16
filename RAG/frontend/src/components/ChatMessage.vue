@@ -8,6 +8,7 @@ const emit = defineEmits<{ feedback: [val: 'up' | 'down'] }>()
 
 const showSources = ref(false)
 const activeSource = ref(-1)
+const sourceList = ref<HTMLElement>()
 
 const html = computed(() =>
   renderMarkdown(props.message.content, props.message.citations?.length ?? 0)
@@ -20,8 +21,8 @@ function onContentClick(e: MouseEvent) {
   activeSource.value = idx
   showSources.value = true
   nextTick(() => {
-    document
-      .getElementById(`source-${idx}`)
+    sourceList.value
+      ?.querySelector(`[data-idx="${idx}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   })
 }
@@ -45,11 +46,11 @@ function setFeedback(val: 'up' | 'down') {
         <el-button text size="small" type="primary" @click="showSources = !showSources">
           参考来源（{{ message.citations.length }}）
         </el-button>
-        <div v-if="showSources" class="source-list">
+        <div v-if="showSources" ref="sourceList" class="source-list">
           <div
             v-for="(c, i) in message.citations"
             :key="i"
-            :id="'source-' + i"
+            :data-idx="i"
             class="source-item"
             :class="{ active: i === activeSource }"
           >
