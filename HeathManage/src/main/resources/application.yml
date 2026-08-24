@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: health-report-service
+
+app:
+  mock-ai:
+    # 模拟 AI 延迟（毫秒），用于演示数秒返回
+    delay-ms: 3000
+    # 文件标识包含该关键字（忽略大小写）时，模拟 AI 处理失败
+    fail-keyword: fail
